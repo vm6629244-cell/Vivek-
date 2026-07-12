@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👨‍💼 Consultant Panel - Live Enquiries</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .upi-badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .stat-box .label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .enquiry-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .enquiry-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(5px);
+        }
+
+        .enquiry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .enquiry-phone {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .enquiry-time {
+            font-size: 12px;
+            color: #999;
+            background: #e9ecef;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+
+        .enquiry-status {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-replied {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .enquiry-problem {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        .reply-section {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .reply-section.active {
+            display: block;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-reply {
+            background: #28a745;
+            width: 100%;
+        }
+
+        .btn-reply:hover {
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .template-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .template-btn {
+            background: #e9ecef;
+            color: #333;
+            padding: 8px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        .template-btn:hover {
+            background: #dee2e6;
+        }
+
+        .refresh-btn {
+            background: #007bff;
+            padding: 8px 15px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        .refresh-btn:hover {
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👨‍💼 Consultant Panel - Live Enquiries</h1>
+            <p>Yahan jo bhi user problem likhega, yahan dikhega. Reply dabao, WhatsApp par chala jayega.</p>
+            <div class="upi-badge">📱 UPI: misharvivek0201@axl</div>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="number" id="total-count">0</div>
+                    <div class="label">Total Enquiries</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="pending-count">0</div>
+                    <div class="label">Pending</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="replied-count">0</div>
+                    <div class="label">Replied</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="conversion">0%</div>
+                    <div class="label">Response Rate</div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Pending Enquiries -->
+            <div class="panel">
+                <div class="panel-header">
+                    ⏳ Pending Enquiries
+                    <button class="refresh-btn" onclick="loadEnquiries()">🔄 Refresh</button>
+                </div>
+                <div class="panel-body" id="pending-list">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Replied Enquiries -->
+            <div class="panel">
+                <div class="panel-header">
+                    ✅ Replied Enquiries
+                </div>
+                <div class="panel-body" id="replied-list">
+                    <div class="empty-state">
+                        <p>No replied enquiries yet</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>🚀 AI Vivek Consultant Platform v2.0 | Last Updated: <span id="last-update">-</span></p>
+            <p style="margin-top: 10px; opacity: 0.7;">Auto-refresh every 5 seconds | All times in IST</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Load enquiries on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEnquiries();
+            setInterval(loadEnquiries, 5000); // Auto-refresh every 5 seconds
+        });
+
+        async function loadEnquiries() {
+            try {
+                const response = await fetch(`${API_BASE}/enquiries`);
+                const enquiries = await response.json();
+                
+                renderEnquiries(enquiries);
+                updateStats(enquiries);
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString('en-IN');
+            } catch (error) {
+                console.error('Error loading enquiries:', error);
+            }
+        }
+
+        function renderEnquiries(enquiries) {
+            const pendingList = document.getElementById('pending-list');
+            const repliedList = document.getElementById('replied-list');
+            
+            let pendingHTML = '';
+            let repliedHTML = '';
+
+            Object.entries(enquiries).forEach(([phone, data]) => {
+                const isPending = data.status === 'pending';
+                const html = createEnquiryCard(phone, data);
+                
+                if (isPending) {
+                    pendingHTML += html;
+                } else {
+                    repliedHTML += html;
+                }
+            });
+
+            pendingList.innerHTML = pendingHTML || '<div class="empty-state"><p>Koi enquiry nahi!</p></div>';
+            repliedList.innerHTML = repliedHTML || '<div class="empty-state"><p>Koi replied enquiry nahi</p></div>';
+        }
+
+        function createEnquiryCard(phone, data) {
+            const templates = [
+                "Career guidance do",
+                "Rishta advice de",
+                "Next step batao"
+            ];
+            const templateBtns = templates.map((t, i) => 
+                `<button class="template-btn" onclick="useTemplate(this, '${t}', '${phone}')">${t}</button>`
+            ).join('');
+
+            return `
+                <div class="enquiry-item">
+                    <div class="enquiry-header">
+                        <div>
+                            <div class="enquiry-phone">📱 ${phone}</div>
+                            <div class="enquiry-time">${data.time}</div>
+                        </div>
+                        <div class="enquiry-status status-${data.status}">${data.status === 'pending' ? '⏳ Pending' : '✅ Replied'}</div>
+                    </div>
+                    <div class="enquiry-problem">"${data.problem}"</div>
+                    ${data.reply ? `<div class="enquiry-problem" style="color: #28a745;">Sent: "${data.reply}"</div>` : ''}
+                    
+                    ${data.status === 'pending' ? `
+                        <div class="template-buttons">${templateBtns}</div>
+                        <div class="reply-section active" id="reply-${phone}">
+                            <textarea id="text-${phone}" placeholder="Reply likho..."></textarea>
+                            <button class="btn-reply" onclick="sendReply('${phone}')">✉️ WhatsApp par bhej (Send Reply)</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function useTemplate(btn, template, phone) {
+            const textarea = document.getElementById(`text-${phone}`);
+            if (textarea) {
+                textarea.value = template;
+                textarea.focus();
+            }
+        }
+
+        async function sendReply(phone) {
+            const replyText = document.getElementById(`text-${phone}`).value.trim();
+            
+            if (!replyText) {
+                alert('Reply likho!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/reply`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, reply: replyText })
+                });
+
+                if (response.ok) {
+                    alert('✅ WhatsApp par bhej diya!');
+                    setTimeout(loadEnquiries, 500);
+                } else {
+                    alert('❌ Error sending reply');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        function updateStats(enquiries) {
+            const total = Object.keys(enquiries).length;
+            const pending = Object.values(enquiries).filter(e => e.status === 'pending').length;
+            const replied = total - pending;
+            const conversion = total > 0 ? Math.round((replied / total) * 100) : 0;
+
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('replied-count').textContent = replied;
+            document.getElementById('conversion').textContent = conversion + '%';
+        }
+    </script>
+</body>
+</html>
