@@ -1,44 +1,304 @@
-# Example to Trigger GitHub Actions from a Render Webhook
+# AI Vivek - 365 Days Mindset Challenge Platform
 
-This example triggers a GitHub Action workflow that creates a deploy when a deploy ended webhook is received for a specific service.
-While this specific example GitHub Action triggers another deploy, you may also want to:
-- Run end-to-end tests
-- Clear a CDN cache to serve the latest content
-- Notify a monitoring system about new deployment details
-- Sync data or run other post deployment migrations
+Complete AI-powered consultation platform with WhatsApp integration, OpenAI responses, live dashboards, and automated content generation.
 
-## Prerequisites
-If you haven't already, [sign up for a Render account](https://dashboard.render.com/register).
-Creating webhooks on Render requires a Professional plan or higher. You can [view and upgrade your plan](https://dashboard.render.com/billing/update-plan) in the Render Dashboard.
+## 🎯 Features
 
-## Deploy to Render
+### 🤖 WhatsApp Consultant Bot
+- Real-time message handling
+- AI-powered responses (OpenAI GPT-4o-mini)
+- Smart fallback templates (Hinglish + practical advice)
+- Command handling (hi, human, paid)
+- Async message processing
+- Activity logging & analytics
 
-1. Use the button below to deploy to Render </br>
-<a href="https://render.com/deploy?repo=https://github.com/render-examples/webhook-github-action/tree/main"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render"></a>
-2. Follow the [Render documentation](https://render.com/docs/webhooks) to create a webhook with the URL from your service and `/webhook` path that is triggered upon only the `DeployEnded` event. Save the signing secret as the `RENDER_WEBHOOK_SECRET` environment variable.
-3. Follow the [Render documentation](https://render.com/docs/api#1-create-an-api-key) to create a Render API Key. Save the key as the `RENDER_API_KEY` environment variable.
-4. Follow [the GitHub documentation](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) to create a GitHub Action secret named `RENDER_API_KEY` in your GitHub repo with the Render API key you created.
-5. Follow [the GitHub documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) to create a GitHub API token with read/write permissions for `Actions`. Save the token as the `GITHUB_API_TOKEN` environment variable.
-6. Create a GitHub workflow with a dispatch trigger as shown in the [example](./.github/workflows/example.yaml). You can check out [Git Hub Actions Documentation](https://docs.github.com/en/actions) for more information.
-7. Set the following environment variables:
-    - `RENDER_WEBHOOK_SECRET` environment variable to the secret from the webhook created in step 2
-    - `RENDER_API_KEY` to the key created in step 3
-    - `GITHUB_API_TOKEN` to the token created in step 4
-    - `GITHUB_OWNER_NAME` to the owner of the GitHub repo the workflow is in (ex. `render-examples`)
-    - `GITHUB_REPO_NAME` to the GitHub repo the workflow is in (ex. `webhook-github-action`)
-    - `GITHUB_WORKFLOW_ID` to the ID or filename of the workflow to trigger (ex. `example.yaml`)
-8. Trigger a service deploy and watch the GitHub workflow get triggered.
+### 📊 Live Enquiry Dashboard
+- Real-time pending enquiries
+- Quick-reply templates
+- Batch response management
+- Statistics (pending, replied, conversion rate)
+- Auto-refresh every 5 seconds
+- Professional UI (Gradient design)
 
-## Developing
+### 📱 Content Generators
+- **Daily Posts**: 365 days pre-written social media posts
+- **Reels Scripts**: 15-second Instagram Reels / YouTube Shorts scripts
+- **Theme Rotation**: Mindset, Career, Relationship, Money, Focus, Overthinking
+- **Auto-Generation**: Works for any day (1-365)
 
-Once you've created a project and installed dependencies with `pnpm install`, start a development server:
+### 🔗 Integrations
+- WhatsApp Cloud API
+- OpenAI GPT-4o-mini
+- GitHub Actions (Render webhooks)
+- JSON-based data storage
+- Flask REST API
 
+### 🚀 Deployment Ready
+- Environment configuration (.env)
+- Production logging
+- Error handling & validation
+- Gunicorn WSGI support
+- Render / Heroku compatible
+
+---
+
+## 📋 Quick Start
+
+### 1. Clone & Setup
 ```bash
-pnpm run dev
+git clone https://github.com/vm6629244-cell/Vivek-.git
+cd Vivek-
+cp .env.example .env
+# Fill in your WhatsApp & OpenAI tokens
 ```
 
-## Building
-
+### 2. Install Dependencies
 ```bash
-pnpm run build
+pip install -r requirements.txt
 ```
+
+### 3. Run Locally
+```bash
+python app.py
+# Visit: http://localhost:5000/consultant
+```
+
+### 4. Send WhatsApp Message
+- Text your WhatsApp number
+- Type: `hi` or ask a question
+- Get AI response instantly
+
+---
+
+## 📁 Project Structure
+
+```
+Vivek-/
+├── app.py                          # Main Flask bot
+├── app.ts                          # Render webhook (TypeScript)
+├── requirements.txt                # Python dependencies
+├── package.json                    # Node.js dependencies
+│
+├── consultant_dashboard.html       # Live enquiry panel UI
+├── day_post_generator.py           # 365 days post generator
+├── reels_script_generator.py       # 15-sec video script generator
+│
+├── .env.example                    # Configuration template
+├── .github/workflows/example.yaml  # GitHub Actions workflow
+├── render.yaml                     # Render deployment config
+│
+├── SETUP_GUIDE.md                  # Complete setup instructions
+├── README.md                       # This file
+└── LICENSE                         # MIT License
+
+# Generated at runtime:
+├── enquiries.json                  # Pending/replied messages
+├── users.json                      # User data
+├── bot_logs.json                   # Activity logs
+└── app.log                         # Application logs
+```
+
+---
+
+## 🔐 Environment Variables
+
+See `.env.example` for complete list. Key ones:
+
+```env
+WHATSAPP_TOKEN=your_token
+PHONE_NUMBER_ID=your_phone_id
+OPENAI_API_KEY=sk-your-key
+VERIFY_TOKEN=ai_vivek_365
+UPI_ID=misharvivek0201@axl
+```
+
+---
+
+## 🌐 API Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|----------|
+| GET | `/` | Health check + info |
+| GET | `/webhook` | WhatsApp verification |
+| POST | `/webhook` | Receive WhatsApp messages |
+| GET | `/api/enquiries` | List all enquiries |
+| POST | `/api/reply` | Send reply via WhatsApp |
+| GET | `/api/logs` | Bot activity logs |
+| GET | `/consultant` | Live dashboard UI |
+
+---
+
+## 🚀 Deployment
+
+### Render
+```bash
+# Connect GitHub repo to Render
+# Build: pip install -r requirements.txt
+# Start: python app.py
+# Add env vars from .env
+```
+
+### Heroku
+```bash
+heroku create your-app
+git push heroku main
+heroku config:set WHATSAPP_TOKEN=xxx
+```
+
+### Docker
+```dockerfile
+FROM python:3.11
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
+```
+
+---
+
+## 📊 Usage Examples
+
+### Generate Daily Post (Day 5)
+```python
+from day_post_generator import generate_post
+post = generate_post(5)
+print(post)
+```
+
+### Generate Reels Script (Day 10)
+```python
+from reels_script_generator import generate_reels_script, format_script_for_video
+script = generate_reels_script(10)
+print(format_script_for_video(script))
+```
+
+### Use AI Response Directly
+```python
+from app import get_ai_reply
+response = get_ai_reply("Mera career stuck hai")
+print(response)
+```
+
+---
+
+## 💡 Features Breakdown
+
+### WhatsApp Bot Commands
+- `hi` / `hello` / `start` - Get greeting
+- `human` - Request human consultant
+- `paid` - Activate premium mode
+- Any text - Get AI consultation response
+
+### Dashboard Features
+- 📊 Real-time statistics
+- 🔄 Auto-refresh every 5 seconds
+- 💬 Quick-reply templates
+- ✅ Pending/replied tracking
+- 📈 Conversion rate display
+
+### AI Response Features
+- 🎯 Personalized advice
+- 🔄 3-point structure (Soch, Aadat, Nazariya)
+- 🌍 Hinglish language
+- 📱 WhatsApp-friendly format
+- 🤖 Fallback templates when API fails
+
+---
+
+## 🔧 Customization
+
+### Change AI Persona
+Edit `EXPERT_PROMPT` in `app.py`
+
+### Add More Day Posts
+Edit `reels_scripts` dict in `reels_script_generator.py`
+
+### Modify Dashboard UI
+Edit `consultant_dashboard.html`
+
+### Add Database
+Replace JSON files with MongoDB/PostgreSQL
+
+---
+
+## 📈 Analytics
+
+Bot logs all interactions in `bot_logs.json`:
+```json
+{
+  "timestamp": "2026-07-12T10:30:00",
+  "type": "ai_response",
+  "phone": "918000000000",
+  "message": "Mera career stuck hai",
+  "response": "Career Pattern: ..."
+}
+```
+
+Access via `/api/logs` endpoint.
+
+---
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file
+
+---
+
+## 📞 Support
+
+- 📱 UPI: misharvivek0201@axl
+- 📧 Instagram: @vivekmishravoidhissa0007
+- 🐛 Issues: [GitHub Issues](https://github.com/vm6629244-cell/Vivek-/issues)
+
+---
+
+## 🙏 Credits
+
+**AI Vivek** - 40 years combined study in:
+- AI & Machine Learning
+- Career Astrology Patterns
+- Human Behaviour & Psychology
+- Mindset Coaching
+
+Built with ❤️ for Young India
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Mobile app (React Native)
+- [ ] Database integration (MongoDB)
+- [ ] Email notifications
+- [ ] SMS integration
+- [ ] Payment gateway (Razorpay)
+- [ ] Advanced analytics
+- [ ] Multi-language support
+- [ ] Video consultation feature
+
+---
+
+## 📊 Tech Stack
+
+**Backend**: Flask, Python 3.11, OpenAI API
+**Frontend**: HTML5, CSS3, JavaScript (vanilla)
+**Messaging**: WhatsApp Cloud API, Meta Platform
+**Deployment**: Render, Heroku, Docker, AWS
+**Storage**: JSON (local), MongoDB/PostgreSQL (optional)
+**Monitoring**: Python logging, JSON logs
+
+---
+
+**Last Updated**: 2026-07-12
+**Version**: 2.0.0
+**Status**: Production Ready ✅

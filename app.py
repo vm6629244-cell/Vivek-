@@ -1,51 +1,126 @@
+"""
+AI Vivek Consultant Bot - Enhanced Version
+WhatsApp + OpenAI Integration
+"""
+
 from flask import Flask, request, jsonify, send_from_directory
-import requests, json, os
+from dotenv import load_dotenv
+import requests
+import json
+import os
 from datetime import datetime
 import threading
+import logging
 
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Initialize Flask app
 app = Flask(__name__)
 
-TOKEN = os.getenv("WHATSAPP_TOKEN", "YOUR_TOKEN")
-PHONE_ID = os.getenv("PHONE_NUMBER_ID", "YOUR_PHONE_ID")
+# Configuration from environment
+TOKEN = os.getenv("WHATSAPP_TOKEN", "")
+PHONE_ID = os.getenv("PHONE_NUMBER_ID", "")
 VERIFY = os.getenv("VERIFY_TOKEN", "ai_vivek_365")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
-UPI_ID = "misharvivek0201@axl"
+UPI_ID = os.getenv("UPI_ID", "misharvivek0201@axl")
 
+# Validate required environment variables
+required_vars = ["WHATSAPP_TOKEN", "PHONE_NUMBER_ID", "VERIFY_TOKEN"]
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+if missing_vars:
+    logger.error(f"Missing environment variables: {', '.join(missing_vars)}")
+    logger.error("Copy .env.example to .env and fill in your values")
+    if os.getenv("FLASK_ENV") != "development":
+        exit(1)
+
+# File paths
 USERS_FILE = "users.json"
 ENQ_FILE = "enquiries.json"
+LOGS_FILE = "bot_logs.json"
 
 # Initialize files
-for f in [USERS_FILE, ENQ_FILE]:
+for f in [USERS_FILE, ENQ_FILE, LOGS_FILE]:
     if not os.path.exists(f):
         with open(f, "w") as jf:
-            json.dump({} if "enq" in f else [], jf)
+            json.dump({} if f != LOGS_FILE else [], jf)
 
 def load(p):
+    """Load JSON file safely"""
     try:
         with open(p) as f:
             return json.load(f)
-    except:
-        return {} if "enq" in p else []
+    except Exception as e:
+        logger.error(f"Error loading {p}: {e}")
+        return {} if "enq" in p or "user" in p else []
 
 def save(p, data):
-    with open(p, "w") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """Save JSON file safely"""
+    try:
+        with open(p, "w") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving {p}: {e}")
+
+def log_event(event_type, phone, message, response=""):
+    """Log bot events for analytics"""
+    try:
+        logs = load(LOGS_FILE)
+        logs.append({
+            "timestamp": datetime.now().isoformat(),
+            "type": event_type,
+            "phone": phone,
+            "message": message[:100],  # Truncate long messages
+            "response": response[:100]
+        })
+        save(LOGS_FILE, logs[-100:])  # Keep last 100 logs
+    except Exception as e:
+        logger.error(f"Error logging event: {e}")
 
 def send(to, txt):
-    """Send message via WhatsApp"""
+    """Send message via WhatsApp API"""
+    if not TOKEN or not PHONE_ID:
+        logger.warning("WhatsApp credentials not configured")
+        return False
+    
     url = f"https://graph.facebook.com/v20.0/{PHONE_ID}/messages"
-    h = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
+    h = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": txt[:3800]}
+    }
+    
     try:
-        requests.post(url, headers=h, json={
-            "messaging_product": "whatsapp",
-            "to": to,
-            "type": "text",
-            "text": {"body": txt[:3800]}
-        }, timeout=10)
+        response = requests.post(url, headers=h, json=payload, timeout=10)
+        if response.status_code == 200:
+            logger.info(f"Message sent to {to}")
+            return True
+        else:
+            logger.error(f"Failed to send message: {response.status_code}")
+            return False
     except Exception as e:
-        print(f"Send error: {e}")
+        logger.error(f"Error sending message: {e}")
+        return False
 
-# 40 Years Expert Prompt
+# Expert AI Prompt
 EXPERT_PROMPT = """
 You are AI Vivek, 40 years combined study in AI, Career Astrology Patterns, Human Behaviour.
 Rules:
@@ -61,24 +136,33 @@ Give reply in 120 words max, WhatsApp friendly.
 
 def get_ai_reply(problem):
     """Get AI response using OpenAI or fallback template"""
+    
+    # Try OpenAI first if key is configured
     if OPENAI_KEY and OPENAI_KEY.startswith("sk-"):
         try:
             import openai
             openai.api_key = OPENAI_KEY
             prompt = EXPERT_PROMPT.format(upi=UPI_ID, problem=problem)
-            resp = openai.ChatCompletion.create(
+            
+            response = openai.ChatCompletion.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
-                temperature=0.7
+                temperature=0.7,
+                timeout=10
             )
-            return resp.choices[0].message.content.strip()
+            
+            result = response.choices[0].message.content.strip()
+            logger.info(f"OpenAI response generated")
+            return result
+            
         except Exception as e:
-            print(f"OpenAI error: {e}")
+            logger.warning(f"OpenAI error: {e}, using fallback template")
     
-    # Fallback templates
+    # Fallback templates based on keywords
     low = problem.lower()
-    if any(w in low for w in ["career", "job", "naukri", "business"]):
+    
+    if any(w in low for w in ["career", "job", "naukri", "business", "promotion", "salary"]):
         return f"""Career Pattern: '{problem}'
 
 1. **Soch**: Tum safety aur growth me confuse ho.
@@ -88,7 +172,7 @@ def get_ai_reply(problem):
 Detail me samjhau? **HUMAN likho**. 
 Note: Ye margdarshan hai, antim nirnay aapka vivek."""
     
-    if any(w in low for w in ["love", "rishta", "shaadi", "relationship"]):
+    elif any(w in low for w in ["love", "rishta", "shaadi", "relationship", "breakup", "proposal"]):
         return f"""Relationship Pattern: '{problem}'
 
 1. **Sunna**: 2 min bina advise ke suno.
@@ -97,84 +181,139 @@ Note: Ye margdarshan hai, antim nirnay aapka vivek."""
 
 Is pattern ko todne ka daily task du? **HUMAN likho**."""
     
-    return f"""Mind Hack: '{problem}'
+    elif any(w in low for w in ["paise", "money", "investment", "business", "earn", "rich"]):
+        return f"""Money Mindset: '{problem}'
 
-Overthinking ka ilaaj action hai. Ek kagaz par likho 'Aaj ka 1 kaam jisse raat ko sukoon milega'. Bas wahi karo. 2 min me shuru karo.
+1. **Samjho**: Paisa earn se zyada important save karna hai.
+2. **Action**: Aaj se 1 jar, 100 rupay roz dalo.
+3. **Result**: 1 saal me 36,000. 5 saal me 2 lakhs+.
 
-Roz 7AM ko exercise chahiye to **START 365 likho**. Human se baat karni hai to **HUMAN likho**."""
+Aur seekhna hai? **HUMAN likho**."""
+    
+    elif any(w in low for w in ["overthink", "anxiety", "tension", "stress", "worry", "fear"]):
+        return f"""Mind Hack: '{problem}'
 
-@app.route("/")
+Overthinking ka ilaaj sochna nahi, action hai.
+1 kaam chuno, 2 min me shuru karo.
+Kal ka wait khatam, aaj se start.
+
+Aur guidance chahiye? **HUMAN likho**."""
+    
+    else:
+        return f"""Life Hack: '{problem}'
+
+Ek kagaz nikalo. Likho: 'Aaj ka 1 kaam jisse raat ko sukoon milega'.
+Bas wahi kar. 2 min me shuru kar.
+Roz ye karo, life change hoga.
+
+Personal session chahiye? **HUMAN likho**."""
+
+# Routes
+@app.route("/", methods=["GET"])
 def home():
-    return "🎯 AI Vivek Consultant Bot v2 - LIVE 🚀"
+    return jsonify({
+        "status": "🎯 AI Vivek Consultant Bot v2 - LIVE 🚀",
+        "version": "2.0.0",
+        "endpoints": {
+            "webhook": "/webhook (POST)",
+            "enquiries": "/api/enquiries (GET)",
+            "reply": "/api/reply (POST)",
+            "dashboard": "/consultant (GET)",
+            "logs": "/api/logs (GET)"
+        }
+    }), 200
 
 @app.route("/webhook", methods=["GET"])
 def verify():
+    """Webhook verification for WhatsApp"""
     if request.args.get("hub.verify_token") == VERIFY:
+        logger.info("Webhook verified successfully")
         return request.args.get("hub.challenge"), 200
+    logger.warning("Webhook verification failed")
     return "fail", 403
 
 @app.route("/webhook", methods=["POST"])
 def hook():
     """Handle incoming WhatsApp messages"""
     try:
-        v = request.get_json()["entry"][0]["changes"][0]["value"]
-        if "messages" not in v:
+        data = request.get_json()
+        entry = data.get("entry", [{}])[0]
+        changes = entry.get("changes", [{}])[0]
+        value = changes.get("value", {})
+        
+        if "messages" not in value:
             return "ok", 200
         
-        m = v["messages"][0]
-        frm = m["from"]
-        txt = m.get("text", {}).get("body", "").strip()
+        message = value["messages"][0]
+        phone = message["from"]
+        text = message.get("text", {}).get("body", "").strip()
         
-        if not txt:
+        if not text:
             return "ok", 200
         
-        low = txt.lower()
+        logger.info(f"Message from {phone}: {text[:50]}")
         
         # Save enquiry
         enq = load(ENQ_FILE)
-        enq[frm] = {
-            "problem": txt,
+        enq[phone] = {
+            "problem": text,
             "time": datetime.now().strftime("%d/%m %H:%M"),
             "status": "pending"
         }
         save(ENQ_FILE, enq)
         
+        low = text.lower()
+        
         # Handle commands
         if low in ["hi", "hello", "start", "start 365"]:
-            send(frm, f"""Namaste 🙏 Main AI Vivek - 40 saal ke adhyayan se bana Consultant
+            greeting = f"""Namaste 🙏 Main AI Vivek - 40 saal ke adhyayan se bana Consultant
 
 Problem ek line me likho, main pattern + solution dunga.
 
 📱 UPI: {UPI_ID}
-📍 IDs: @vivekmishravoidhissa0007, @vivekmishra77771, @viv.ek00047, @viekvoidhissa0369""")
+📍 Follow: @vivekmishravoidhissa0007 | @vivekmishra77771"""
+            send(phone, greeting)
+            log_event("greeting", phone, text)
+            
         elif low == "human":
-            send(frm, "✅ Human consultant ko request bhej di. 2 ghante me reply ayega. Tab tak DOB + sawal bhej do. Priority ke liye 199 pay karke PAID likho.")
+            send(phone, "✅ Human consultant ko request bhej di. 2 ghante me reply ayega. Tab tak DOB + sawal bhej do. Priority ke liye 199 pay karke PAID likho.")
+            log_event("human_request", phone, text)
+            
         elif low == "paid":
-            send(frm, "✅ Premium ON! Ab tum priority me ho. Problem dubara likho.")
+            send(phone, "✅ Premium ON! Ab tum priority me ho. Problem dubara likho.")
+            log_event("premium_activated", phone, text)
+            
         else:
-            # Send AI reply async
-            def reply_async():
-                reply = get_ai_reply(txt)
-                send(frm, reply)
-            threading.Thread(target=reply_async, daemon=True).start()
+            # Generate AI reply asynchronously
+            def send_ai_reply():
+                try:
+                    reply = get_ai_reply(text)
+                    send(phone, reply)
+                    log_event("ai_response", phone, text, reply)
+                except Exception as e:
+                    logger.error(f"Error generating AI response: {e}")
+                    send(phone, "Kuch error hua. Dobara try kar.")
+            
+            threading.Thread(target=send_ai_reply, daemon=True).start()
     
     except Exception as e:
-        print(f"Webhook error: {e}")
+        logger.error(f"Webhook error: {e}")
     
     return "ok", 200
 
 @app.route("/api/enquiries", methods=["GET"])
 def get_enquiries():
-    """API to get all enquiries for dashboard"""
+    """Get all enquiries"""
     try:
         enq = load(ENQ_FILE)
         return jsonify(enq), 200
     except Exception as e:
+        logger.error(f"Error fetching enquiries: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/reply", methods=["POST"])
 def reply_enquiry():
-    """API to send reply via WhatsApp"""
+    """Send reply via WhatsApp"""
     try:
         data = request.get_json()
         phone = data.get("phone")
@@ -184,18 +323,32 @@ def reply_enquiry():
             return jsonify({"error": "Phone and reply required"}), 400
         
         # Send message
-        send(phone, reply_text)
-        
-        # Update enquiry status
-        enq = load(ENQ_FILE)
-        if phone in enq:
-            enq[phone]["status"] = "replied"
-            enq[phone]["reply"] = reply_text
-            enq[phone]["reply_time"] = datetime.now().strftime("%d/%m %H:%M")
-            save(ENQ_FILE, enq)
-        
-        return jsonify({"success": True}), 200
+        if send(phone, reply_text):
+            # Update enquiry
+            enq = load(ENQ_FILE)
+            if phone in enq:
+                enq[phone]["status"] = "replied"
+                enq[phone]["reply"] = reply_text
+                enq[phone]["reply_time"] = datetime.now().strftime("%d/%m %H:%M")
+                save(ENQ_FILE, enq)
+            
+            log_event("reply_sent", phone, reply_text[:100])
+            return jsonify({"success": True}), 200
+        else:
+            return jsonify({"error": "Failed to send message"}), 500
+    
     except Exception as e:
+        logger.error(f"Error sending reply: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/logs", methods=["GET"])
+def get_logs():
+    """Get bot activity logs"""
+    try:
+        logs = load(LOGS_FILE)
+        return jsonify(logs[-50:]), 200  # Return last 50 logs
+    except Exception as e:
+        logger.error(f"Error fetching logs: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/consultant")
@@ -203,9 +356,26 @@ def dashboard():
     """Serve consultant dashboard"""
     try:
         return send_from_directory(".", "consultant_dashboard.html")
-    except:
-        return "Dashboard not found", 404
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        return f"Dashboard error: {e}", 404
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    logger.error(f"Server error: {error}")
+    return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    debug = os.getenv("FLASK_ENV") == "development"
+    
+    logger.info(f"🚀 Starting AI Vivek Bot on port {port}")
+    logger.info(f"📱 WhatsApp Phone ID: {PHONE_ID if PHONE_ID else 'NOT CONFIGURED'}")
+    logger.info(f"🤖 OpenAI: {'CONFIGURED' if OPENAI_KEY else 'NOT CONFIGURED'}")
+    
+    app.run(host="0.0.0.0", port=port, debug=debug)
